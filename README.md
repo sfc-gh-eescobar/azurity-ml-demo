@@ -1,4 +1,4 @@
-# Azurity Pharmaceuticals ML Demo
+# Azurity Pharmaceuticals ML and Spark Connect Demos
 
 End-to-end machine learning demo showcasing Snowflake's ML capabilities for pharmaceutical demand forecasting.
 
@@ -15,6 +15,7 @@ End-to-end machine learning demo showcasing Snowflake's ML capabilities for phar
 |------------|-------------|----------|
 | **Feature Store** | Centralized ML features with point-in-time correctness | `azurity_prescription_forecasting.ipynb` |
 | **Model Registry** | Version models with metrics, enable SQL inference | `azurity_prescription_forecasting.ipynb` |
+| **Experiment Tracking** | Compare hyperparameters and model versions in Snowsight UI | `azurity_prescription_forecasting.ipynb` |
 | **Streamlit in Notebooks** | Interactive visualizations vs. static PowerBI | `azurity_prescription_forecasting.ipynb` |
 | **Spark Connect** | Run PySpark code against Snowflake (no data movement) | `azurity_spark_connect_analytics.ipynb` |
 | **Container Runtime** | pip install packages, consistent environments | Both notebooks |
@@ -63,23 +64,41 @@ CREATE OR REPLACE GIT REPOSITORY AZURITY_DEMO_DB.PUBLIC.AZURITY_ML_REPO
 
 **Runtime**: Container Runtime with `AZURITY_ML_POOL`
 
+This notebook demonstrates a complete ML workflow for predicting 30-day prescription volume by product and healthcare provider.
+
 Key sections:
-1. **Data Exploration** - Azurity product portfolio and HCP distribution
-2. **Feature Store Setup** - Register entities and feature views
-3. **Training Data Generation** - Point-in-time correct features
-4. **Model Training** - XGBoost regressor for 30-day volume
-5. **Model Registry** - Register with metrics, enable SQL inference
-6. **Streamlit A/B Test Analysis** - Interactive campaign comparison
+1. **Data Exploration** - Azurity product portfolio (Eprontia, Katerzia, Qbrelis, etc.) and HCP distribution across 10,000 providers
+2. **Feature Store Setup** - Register entities (PRODUCT, HCP) and create feature views with automatic refresh
+3. **Training Data Generation** - Point-in-time correct feature retrieval using ASOF joins to prevent data leakage
+4. **Model Training** - XGBoost regressor predicting 30-day prescription volume
+5. **Model Registry** - Register model V1 with metrics, enable SQL inference via `MODEL!PREDICT()`
+6. **Experiment Tracking** - Train model V2 with tuned hyperparameters, compare versions in Snowsight (AI & ML → Experiments)
+7. **Streamlit A/B Test Analysis** - Interactive campaign comparison with statistical significance testing
+
+**What to demo**:
+- Show how Feature Store prevents accidental data leakage in backtesting
+- Run SQL inference directly from a worksheet using `AZURITY_RX_FORECASTER!PREDICT()`
+- Navigate to AI & ML → Experiments to compare V1 vs V2 model performance
+- Interactive Streamlit charts embedded in the notebook
 
 ### Spark Connect Analytics (`azurity_spark_connect_analytics.ipynb`)
 
-**Runtime**: Container Runtime with `AZURITY_ML_POOL`
+**Runtime**: Container Runtime with `AZURITY_ML_POOL` (Python 3.11 required)
+
+This notebook demonstrates running PySpark code against Snowflake data without copying data out. Ideal for teams migrating from Databricks or with existing Spark codebases.
 
 Key sections:
-1. **Spark Connect Setup** - jdk4py for JVM in Container Runtime
-2. **PySpark Operations** - groupBy, join, window functions
-3. **SQL Pushdown** - Operations translated to Snowflake SQL
-4. **Write Back** - Save Spark results as Snowflake tables
+1. **Spark Connect Setup** - Install `snowpark-connect[jdk]` and `jdk4py` for JVM in Container Runtime
+2. **DataFrame Operations** - PySpark groupBy, join, filter operations executed as Snowflake SQL
+3. **Window Functions** - Running totals, rankings, and lag calculations
+4. **Data Enrichment** - Join prescriptions with HCP data for regional analysis
+5. **Write Back** - Save Spark DataFrames as Snowflake tables with `.write.mode("overwrite").saveAsTable()`
+
+**What to demo**:
+- Existing PySpark code runs unchanged against Snowflake
+- All operations push down to Snowflake SQL (no data movement)
+- Show the Spark UI to demonstrate query execution
+- Compare identical PySpark syntax with native Snowpark Python
 
 ## Key Talking Points
 
@@ -125,11 +144,21 @@ RAW.EMAIL_CAMPAIGNS
 
 **Model**: `AZURITY_DEMO_DB.ML.AZURITY_RX_FORECASTER`
 
+| Version | Parameters | Use Case |
+|---------|------------|----------|
+| V1 | n_estimators=100, max_depth=6, learning_rate=0.1 | Baseline model |
+| V2 | n_estimators=200, max_depth=8, learning_rate=0.05, regularization | Tuned for better accuracy |
+
 | Parameter | Value |
 |-----------|-------|
 | Algorithm | XGBoost Regressor |
 | Target | 30-day prescription volume |
 | Features | RX_VOLUME_2W, RX_VOLUME_4W, RX_AVG_LAST_WEEK, RX_COUNT_4W |
+
+**Experiment**: `AZURITY_RX_FORECASTING_EXPERIMENT`
+- View in Snowsight: AI & ML → Experiments
+- Compare V1 vs V2 metrics (RMSE, MAE, R²)
+- Track hyperparameter differences
 
 SQL Inference:
 ```sql
