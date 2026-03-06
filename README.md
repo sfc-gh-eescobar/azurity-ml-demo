@@ -25,7 +25,7 @@ End-to-end machine learning demo showcasing Snowflake's ML capabilities for phar
 
 ### 1. Run Infrastructure Setup
 
-Execute `setup_azurity_demo.sql` with ACCOUNTADMIN to create:
+Execute `setup_azurity_demo.sql` with ACCOUNTADMIN (or other custom role) to create:
 - Database: `AZURITY_DEMO_DB`
 - Schemas: `ML`, `RAW`
 - Compute Pool: `AZURITY_ML_POOL`
